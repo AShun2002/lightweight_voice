@@ -5,21 +5,21 @@
 ## 系统架构图
 ```mermaid
 graph LR
-    Client[客户端/Postman/网页] --> FastAPI[FastAPI服务层]
-    FastAPI --> Route[/api/ask 统一接口]
-    Route --> VoiceChat[语音问答核心调度层]
-    
-    VoiceChat --> ASR[ASR语音识别模块]
-    VoiceChat --> LLM[LLM问答推理模块]
-    VoiceChat --> TTS[TTS语音合成模块]
+    Client["客户端/Postman/网页"] --> FastAPI["FastAPI服务层"]
+    FastAPI --> Route["/api/ask 统一接口"]
+    Route --> VoiceChat["语音问答核心调度层"]
 
-    subgraph Providers能力层
-        ASR --> QwenASR(通义千问语音识别)
-        LLM --> QwenLLM(通义大模型问答)
-        TTS --> EdgeTTS(Edge语音合成)
+    VoiceChat --> ASR["ASR语音识别模块"]
+    VoiceChat --> LLM["LLM问答推理模块"]
+    VoiceChat --> TTS["TTS语音合成模块"]
+
+    subgraph Providers["Providers 能力层"]
+        ASR --> QwenASR["通义千问语音识别"]
+        LLM --> QwenLLM["通义大模型问答"]
+        TTS --> EdgeTTS["Edge 语音合成"]
     end
 
-    VoiceChat --> Session[会话管理]
-    VoiceChat --> CRM[用户信息提取存储SQLite]
-    Session --> SQLite[(会话数据库)]
+    VoiceChat --> Session["会话管理"]
+    VoiceChat --> CRM["用户信息提取存储 SQLite"]
+    Session --> SQLite["(会话数据库)"]
     CRM --> SQLite
