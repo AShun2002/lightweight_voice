@@ -1,0 +1,955 @@
+{
+    "info": {
+        "_postman_id": "voice-chat-assistant-collection",
+        "name": "轻量化语音问答服务接口集合",
+        "description": "轻量级语音问答服务完整 API 测试集合，包含核心问答、会话管理、CRM 用户信息等所有接口。\n\n使用说明：\n1. 导入到 Postman 后，建议创建环境变量 base_url，默认值为 http://127.0.0.1:8000\n2. 音频接口测试时，需要在 form-data 中选择本地音频文件\n3. 多轮对话测试时，将上一个接口返回的 session_id 填入后续请求",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://127.0.0.1:8000",
+            "type": "string"
+        },
+        {
+            "key": "session_id",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. 健康检查",
+            "item": [
+                {
+                    "name": "检查服务状态",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/health",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "health"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/health",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "health"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"status\": \"ok\",\n    \"version\": \"1.0.0\",\n    \"message\": \"语音交互服务运行中\"\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "1. 会话管理",
+            "item": [
+                {
+                    "name": "创建新会话",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/session/create",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "session", "create"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/session/create",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "session", "create"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "清空会话历史",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/session/clear?session_id={{session_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "session", "clear"],
+                            "query": [
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/session/clear?session_id=xxx",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "session", "clear"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"对话历史已清空\",\n  \"data\": null\n}"
+                        },
+                        {
+                            "name": "会话不存在",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/session/clear?session_id=invalid",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "session", "clear"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "invalid"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 1002,\n  \"message\": \"会话不存在\",\n  \"data\": null\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "删除会话",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/session/delete?session_id={{session_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "session", "delete"],
+                            "query": [
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/session/delete?session_id=xxx",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "session", "delete"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"会话已删除\",\n  \"data\": null\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "2. 核心问答接口",
+            "item": [
+                {
+                    "name": "纯文本提问（仅返回文本）",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "text",
+                                    "value": "简单介绍这个语音问答服务",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "return_audio",
+                                    "value": "false",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ask",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "ask"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "text",
+                                            "value": "简单介绍这个语音问答服务",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "return_audio",
+                                            "value": "false",
+                                            "type": "text"
+                                        }
+                                    ]
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/ask",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "ask"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_text\": \"简单介绍这个语音问答服务\",\n    \"reply_text\": \"这是一个轻量级语音问答服务，支持文本和语音两种输入方式，集成了 ASR 语音识别、LLM 大模型问答和 TTS 语音合成能力...\",\n    \"audio_url\": null\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "纯文本提问（返回语音）",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "text",
+                                    "value": "你好，今天天气怎么样？",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "return_audio",
+                                    "value": "true",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ask",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "ask"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "text",
+                                            "value": "你好，今天天气怎么样？",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "return_audio",
+                                            "value": "true",
+                                            "type": "text"
+                                        }
+                                    ]
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/ask",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "ask"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_text\": \"你好，今天天气怎么样？\",\n    \"reply_text\": \"你好！今天天气晴朗，气温适宜，很适合出门活动哦。\",\n    \"audio_url\": \"/api/audio/output_abc123.mp3\"\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "音频上传提问（返回语音）",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "audio",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "return_audio",
+                                    "value": "true",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ask",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "ask"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "audio",
+                                            "type": "file",
+                                            "src": ""
+                                        },
+                                        {
+                                            "key": "return_audio",
+                                            "value": "true",
+                                            "type": "text"
+                                        }
+                                    ]
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/ask",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "ask"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_text\": \"你好，介绍一下你自己\",\n    \"reply_text\": \"你好！我是一个语音问答助手，可以回答你的各种问题。\",\n    \"audio_url\": \"/api/audio/output_def456.mp3\"\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "带会话ID多轮对话",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "text",
+                                    "value": "刚才的回答再详细一点",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "return_audio",
+                                    "value": "false",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ask",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "ask"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "text",
+                                            "value": "刚才的回答再详细一点",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "return_audio",
+                                            "value": "false",
+                                            "type": "text"
+                                        }
+                                    ]
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/ask",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "ask"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_text\": \"刚才的回答再详细一点\",\n    \"reply_text\": \"好的，我来详细介绍一下...（基于上下文的详细回答）\",\n    \"audio_url\": null\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "参数错误示例（不传text和audio）",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "return_audio",
+                                    "value": "false",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ask",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "ask"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "参数错误响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "return_audio",
+                                            "value": "false",
+                                            "type": "text"
+                                        }
+                                    ]
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/ask",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "ask"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 1001,\n  \"message\": \"请提供 text 或 audio 参数\",\n  \"data\": null\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "3. 兼容旧接口",
+            "item": [
+                {
+                    "name": "文字对话（兼容）",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"你好\",\n  \"session_id\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/chat/text",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "chat", "text"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"message\": \"你好\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/chat/text",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "chat", "text"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"reply\": \"你好！有什么可以帮你的？\",\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "语音对话（兼容）",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "audio",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "session_id",
+                                    "value": "",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/chat/voice",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "chat", "voice"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "audio",
+                                            "type": "file",
+                                            "src": ""
+                                        }
+                                    ]
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/chat/voice",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "chat", "voice"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"user_text\": \"你好\",\n    \"reply_text\": \"你好！\",\n    \"audio_url\": \"/api/audio/output_xxx.mp3\",\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "4. CRM 用户信息",
+            "item": [
+                {
+                    "name": "获取用户信息",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/crm/profile?session_id={{session_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "crm", "profile"],
+                            "query": [
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/crm/profile?session_id=xxx",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "crm", "profile"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"id\": 1,\n    \"session_id\": \"xxx\",\n    \"name\": \"张三\",\n    \"age\": 28,\n    \"gender\": \"男\",\n    \"phone\": null,\n    \"email\": null,\n    \"location\": \"北京\",\n    \"interests\": \"[\\\"科技\\\", \\\"音乐\\\"]\",\n    \"requirements\": \"[\\\"了解产品\\\"]\",\n    \"notes\": null,\n    \"created_at\": \"2024-01-01T00:00:00\",\n    \"updated_at\": \"2024-01-01T00:00:00\"\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "更新用户信息",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"张三\",\n  \"age\": 28,\n  \"gender\": \"男\",\n  \"location\": \"北京\",\n  \"interests\": [\"科技\", \"音乐\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/crm/profile?session_id={{session_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "crm", "profile"],
+                            "query": [
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"张三\",\n  \"age\": 28\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/crm/profile?session_id=xxx",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "crm", "profile"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"id\": 1,\n    \"session_id\": \"xxx\",\n    \"name\": \"张三\",\n    \"age\": 28,\n    ...\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "获取所有用户列表",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/crm/profiles?limit=50",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "crm", "profiles"],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/crm/profiles?limit=50",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "crm", "profiles"],
+                                    "query": [
+                                        {
+                                            "key": "limit",
+                                            "value": "50"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"total\": 2,\n    \"profiles\": [\n      { ... },\n      { ... }\n    ]\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "手动提取用户信息",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/crm/extract?session_id={{session_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "crm", "extract"],
+                            "query": [
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/crm/extract?session_id=xxx",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "crm", "extract"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"extracted\": {\n      \"location\": \"北京\"\n    },\n    \"profile\": { ... }\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "删除用户档案",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/crm/profile?session_id={{session_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "crm", "profile"],
+                            "query": [
+                                {
+                                    "key": "session_id",
+                                    "value": "{{session_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应",
+                            "originalRequest": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/crm/profile?session_id=xxx",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "crm", "profile"],
+                                    "query": [
+                                        {
+                                            "key": "session_id",
+                                            "value": "xxx"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"code\": 0,\n  \"message\": \"用户档案已删除\",\n  \"data\": null\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "5. 音频文件",
+            "item": [
+                {
+                    "name": "获取音频文件",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/audio/output_xxx.mp3",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "audio", "output_xxx.mp3"]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "成功响应（音频流）",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/audio/output_xxx.mp3",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "audio", "output_xxx.mp3"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "// 返回 audio/mpeg 类型的音频文件流，可直接播放"
+                        },
+                        {
+                            "name": "文件不存在",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/audio/not_found.mp3",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "audio", "not_found.mp3"]
+                                }
+                            },
+                            "status": "Not Found",
+                            "code": 404,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n  \"detail\": \"音频文件不存在\"\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

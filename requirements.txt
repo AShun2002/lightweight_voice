@@ -1,0 +1,15 @@
+# Web 服务
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+
+# AI 相关
+dashscope>=1.14.0
+openai>=1.0.0
+edge-tts>=6.1.0
+
+# 配置文件
+pyyaml>=6.0
+
+# 数据库
+# SQLite 是 Python 内置的，不需要额外装
