@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from openai import OpenAI
 from config import config
+from typing import List, Optional, Dict, Any
 
 class CRMManager:
     """CRM 用户信息管理器"""
@@ -225,3 +226,192 @@ class CRMManager:
 
 # 全局 CRM 管理器实例
 crm_manager = CRMManager()
+
+
+
+# ========== 客户管理数据库 ==========
+CUSTOMER_DB_PATH = os.path.join(os.path.dirname(__file__), "data", "customers.db")
+
+def init_customer_db():
+    """初始化客户管理数据库表"""
+    os.makedirs(os.path.dirname(CUSTOMER_DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(CUSTOMER_DB_PATH)
+    cursor = conn.cursor()
+    
+    # 客户表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT,
+            email TEXT,
+            company TEXT,
+            status TEXT DEFAULT '潜在客户',  -- 潜在客户、意向客户、成交客户、流失客户
+            source TEXT,  -- 客户来源：线上咨询、朋友介绍、展会等
+            remark TEXT,  -- 备注
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # 跟进记录表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS follow_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL,
+            content TEXT NOT NULL,  -- 跟进内容
+            follow_type TEXT DEFAULT '电话',  -- 电话、微信、见面、邮件
+            follow_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            follower TEXT,  -- 跟进人
+            FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+# 初始化数据库
+init_customer_db()
+
+def _get_customer_conn():
+    """获取数据库连接"""
+    conn = sqlite3.connect(CUSTOMER_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# ========== 客户CRUD操作 ==========
+def create_customer(name: str, phone: str = None, email: str = None, 
+                   company: str = None, source: str = None, remark: str = None) -> Dict[str, Any]:
+    """新增客户"""
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute('''
+        INSERT INTO customers (name, phone, email, company, source, remark, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, phone, email, company, source, remark, now, now))
+    customer_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return get_customer(customer_id)
+
+def get_customer(customer_id: int) -> Optional[Dict[str, Any]]:
+    """查询单个客户"""
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM customers WHERE id = ?", (customer_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    return None
+
+def list_customers(status: str = None, keyword: str = None, limit: int = 50) -> List[Dict[str, Any]]:
+    """查询客户列表，支持按状态和关键词筛选"""
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM customers WHERE 1=1"
+    params = []
+    
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+    
+    if keyword:
+        query += " AND (name LIKE ? OR phone LIKE ? OR company LIKE ?)"
+        params.extend([f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"])
+    
+    query += " ORDER BY created_at DESC LIMIT ?"
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def update_customer(customer_id: int, **kwargs) -> Optional[Dict[str, Any]]:
+    """修改客户信息"""
+    if not get_customer(customer_id):
+        return None
+    
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    
+    # 动态构建更新语句
+    update_fields = []
+    params = []
+    for key, value in kwargs.items():
+        if value is not None and key in ['name', 'phone', 'email', 'company', 'status', 'source', 'remark']:
+            update_fields.append(f"{key} = ?")
+            params.append(value)
+    
+    if not update_fields:
+        conn.close()
+        return get_customer(customer_id)
+    
+    update_fields.append("updated_at = ?")
+    params.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    params.append(customer_id)
+    
+    query = f"UPDATE customers SET {', '.join(update_fields)} WHERE id = ?"
+    cursor.execute(query, params)
+    conn.commit()
+    conn.close()
+    return get_customer(customer_id)
+
+def update_customer_status(customer_id: int, status: str) -> Optional[Dict[str, Any]]:
+    """修改客户状态"""
+    return update_customer(customer_id, status=status)
+
+def delete_customer(customer_id: int) -> bool:
+    """删除客户"""
+    if not get_customer(customer_id):
+        return False
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
+    cursor.execute("DELETE FROM follow_records WHERE customer_id = ?", (customer_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+# ========== 跟进记录操作 ==========
+def add_follow_record(customer_id: int, content: str, follow_type: str = "电话", follower: str = None) -> Optional[Dict[str, Any]]:
+    """添加跟进记录"""
+    if not get_customer(customer_id):
+        return None
+    
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute('''
+        INSERT INTO follow_records (customer_id, content, follow_type, follow_time, follower)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (customer_id, content, follow_type, now, follower))
+    record_id = cursor.lastrowid
+    
+    # 更新客户的更新时间
+    cursor.execute("UPDATE customers SET updated_at = ? WHERE id = ?", (now, customer_id))
+    conn.commit()
+    conn.close()
+    
+    # 返回新增的记录
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM follow_records WHERE id = ?", (record_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_customer_follow_records(customer_id: int) -> List[Dict[str, Any]]:
+    """查询客户的所有跟进记录"""
+    conn = _get_customer_conn()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM follow_records 
+        WHERE customer_id = ? 
+        ORDER BY follow_time DESC
+    ''', (customer_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]

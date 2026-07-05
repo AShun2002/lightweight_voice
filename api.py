@@ -1,3 +1,6 @@
+from voice_chat import VoiceChat
+from config import config
+from agents.crm_agent.agent import ask_agent as ask_crm_agent
 import os
 import uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Request
@@ -54,6 +57,7 @@ ERROR_CODES = {
     2002: "AI 对话失败",
     2003: "语音合成失败",
     3001: "用户档案不存在",
+    4001: "客户不存在",
     5000: "服务器内部错误"
 }
 
@@ -126,6 +130,36 @@ class ProfileUpdateRequest(BaseModel):
     notes: str = None
 
 
+# ========== 客户管理请求模型 ==========
+class CustomerCreateRequest(BaseModel):
+    """新增客户请求"""
+    name: str
+    phone: str = None
+    email: str = None
+    company: str = None
+    source: str = None
+    remark: str = None
+
+class CustomerUpdateRequest(BaseModel):
+    """修改客户请求"""
+    name: str = None
+    phone: str = None
+    email: str = None
+    company: str = None
+    status: str = None
+    source: str = None
+    remark: str = None
+
+class CustomerStatusUpdateRequest(BaseModel):
+    """修改客户状态请求"""
+    status: str  # 潜在客户、意向客户、成交客户、流失客户
+
+class FollowRecordCreateRequest(BaseModel):
+    """添加跟进记录请求"""
+    content: str
+    follow_type: str = "电话"
+    follower: str = None
+
 # ========== 首页 ==========
 
 @app.get("/", response_class=HTMLResponse, summary="首页 - 语音助手网页")
@@ -176,7 +210,7 @@ async def delete_session(session_id: str):
         return error_response(1002, "会话不存在")
 
 
-# ========== 核心问答接口（统一入口）⭐ ==========
+# ========== 核心问答接口（统一入口） ==========
 
 @app.post("/api/ask", summary="统一问答接口（支持文本/语音）")
 async def ask(
@@ -234,6 +268,82 @@ async def ask(
             "user_text": user_text,
             "reply_text": reply_text,
             "audio_url": audio_url
+        })
+        
+    except Exception as e:
+        return error_response(5000, f"服务器错误：{str(e)}")
+    
+
+# ========== CRM Agent 对话接口 ==========
+@app.post("/api/ask/crm", summary="CRM Agent 问答接口（支持文本/语音）")
+async def ask_crm(
+    request: Request,
+    text: str = Form(None),
+    audio: UploadFile = File(None),
+    session_id: str = Form(None),
+    return_audio: bool = Form(True)
+):
+    """
+    CRM Agent 问答接口，支持文本和语音输入
+    
+    - 文本输入：传 text 参数
+    - 语音输入：传 audio 文件
+    - 两者都传的话，优先使用语音
+    - 返回结构化结果：answer、tool_used、legal_reference 等
+    """
+    try:
+        # 1. 处理输入（文本或语音）
+        user_text = ""
+        session_id = session_id or str(uuid.uuid4())
+        
+        if audio:
+            # 语音输入：先用 ASR 转文字
+            # 这里复用 VoiceChat 的 ASR 能力
+            vc = session_manager.get_session(session_id)
+            input_filename = f"{TEMP_DIR}/crm_input_{uuid.uuid4()}.mp3"
+            with open(input_filename, "wb") as f:
+                content = await audio.read()
+                f.write(content)
+            
+            # ASR 语音识别
+            user_text = vc.asr.transcribe(input_filename)
+            
+        elif text:
+            # 文本输入
+            user_text = text
+            
+        else:
+            return error_response(1001, "请提供 text 或 audio 参数")
+        
+        # 2. 调用 CRM Agent
+        # session_id 直接作为 thread_id 传给 Agent，实现对话记忆
+        crm_result = ask_crm_agent(
+            query=user_text,
+            thread_id=session_id,
+            user_id=session_id
+        )
+        
+        # 3. TTS 语音合成（如果需要）
+        audio_url = None
+        if return_audio:
+            vc = session_manager.get_session(session_id)
+            output_filename = f"{TEMP_DIR}/crm_output_{uuid.uuid4()}.mp3"
+            await vc.tts.synthesize(crm_result["answer"], output_filename)
+            audio_url = f"/api/audio/{os.path.basename(output_filename)}"
+        
+        # 4. 返回结构化结果
+        return success_response({
+            "session_id": session_id,
+            "user_text": user_text,
+            "reply_text": crm_result["answer"],
+            "audio_url": audio_url,
+            "structured": {
+                "tool_used": crm_result.get("tool_used"),
+                "legal_reference": crm_result.get("legal_reference"),
+                "search_result": crm_result.get("search_result"),
+                "sql_result": crm_result.get("sql_result"),
+                "confidence": crm_result.get("confidence")
+            }
         })
         
     except Exception as e:
@@ -349,6 +459,105 @@ async def extract_user_info(session_id: str):
         })
     else:
         return error_response(1002, "会话不存在")
+    
+
+# ========== 客户管理业务接口 ==========
+from crm import (
+    create_customer, get_customer, list_customers,
+    update_customer, update_customer_status, delete_customer,
+    add_follow_record, get_customer_follow_records
+)
+
+@app.get("/api/customers", summary="查询客户列表")
+async def get_customers(status: str = None, keyword: str = None, limit: int = 50):
+    """查询客户列表，支持按状态和关键词筛选"""
+    customers = list_customers(status=status, keyword=keyword, limit=limit)
+    return success_response({
+        "total": len(customers),
+        "customers": customers
+    })
+
+@app.get("/api/customers/{customer_id}", summary="查询客户详情")
+async def get_customer_detail(customer_id: int):
+    """查询单个客户详情，包含跟进记录"""
+    customer = get_customer(customer_id)
+    if not customer:
+        return error_response(4001, "客户不存在")
+    
+    # 带上跟进记录
+    customer["follow_records"] = get_customer_follow_records(customer_id)
+    return success_response(customer)
+
+@app.post("/api/customers", summary="新增客户")
+async def create_new_customer(request: CustomerCreateRequest):
+    """新增客户"""
+    customer = create_customer(
+        name=request.name,
+        phone=request.phone,
+        email=request.email,
+        company=request.company,
+        source=request.source,
+        remark=request.remark
+    )
+    return success_response(customer, message="客户新增成功")
+
+@app.put("/api/customers/{customer_id}", summary="修改客户信息")
+async def update_customer_info(customer_id: int, request: CustomerUpdateRequest):
+    """修改客户信息"""
+    customer = update_customer(
+        customer_id,
+        name=request.name,
+        phone=request.phone,
+        email=request.email,
+        company=request.company,
+        status=request.status,
+        source=request.source,
+        remark=request.remark
+    )
+    if not customer:
+        return error_response(4001, "客户不存在")
+    return success_response(customer, message="客户信息更新成功")
+
+@app.put("/api/customers/{customer_id}/status", summary="修改客户状态")
+async def change_customer_status(customer_id: int, request: CustomerStatusUpdateRequest):
+    """修改客户状态（潜在/意向/成交/流失）"""
+    customer = update_customer_status(customer_id, request.status)
+    if not customer:
+        return error_response(4001, "客户不存在")
+    return success_response(customer, message=f"客户状态已更新为：{request.status}")
+
+@app.delete("/api/customers/{customer_id}", summary="删除客户")
+async def delete_customer_info(customer_id: int):
+    """删除客户（同时删除跟进记录）"""
+    success = delete_customer(customer_id)
+    if not success:
+        return error_response(4001, "客户不存在")
+    return success_response(message="客户已删除")
+
+@app.post("/api/customers/{customer_id}/follow", summary="添加跟进记录")
+async def add_follow(customer_id: int, request: FollowRecordCreateRequest):
+    """为客户添加跟进记录"""
+    record = add_follow_record(
+        customer_id=customer_id,
+        content=request.content,
+        follow_type=request.follow_type,
+        follower=request.follower
+    )
+    if not record:
+        return error_response(4001, "客户不存在")
+    return success_response(record, message="跟进记录添加成功")
+
+@app.get("/api/customers/{customer_id}/follow", summary="查询客户跟进记录")
+async def get_follow_records(customer_id: int):
+    """查询客户的所有跟进记录"""
+    if not get_customer(customer_id):
+        return error_response(4001, "客户不存在")
+    records = get_customer_follow_records(customer_id)
+    return success_response({
+        "customer_id": customer_id,
+        "total": len(records),
+        "records": records
+    })
 
 
 # ========== 全局异常处理 ==========
